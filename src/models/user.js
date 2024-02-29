@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const validator  = require('validator')
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
 
 const userSchema = new mongoose.Schema({
     name:{
@@ -37,7 +38,14 @@ const userSchema = new mongoose.Schema({
             }
         }
     },
-    avator: {
+    tokens:[{
+        token:{
+            type: String,
+            require: true
+        }
+    }],
+
+    avatar: {
         type: Buffer,
     },
     avatorExist: {
@@ -63,6 +71,17 @@ const userSchema = new mongoose.Schema({
 
 })
 
+//create token
+userSchema.methods.generateAuthToken = async function(){
+    const user = this
+    const token = jwt.sign({_id: user._id.toString()}, 'twittercloneAPI')
+
+    user.tokens = user.tokens.concat({token})
+    await user.save()
+
+    return token
+}
+
 //relationship between user and tweet
 userSchema.virtual('tweets', {
     ref: 'Tweet',
@@ -75,7 +94,7 @@ userSchema.methods.toJSON = function () {
     const user = this
     const userObject = user.toObject()
 
-    // delete userObject.password
+    delete userObject.password
 
     return userObject
 }
