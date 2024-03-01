@@ -144,4 +144,53 @@ router.put('/users/:id/follow', auth,async (req, res) => {
     }
 })
 
+// unfollow user
+router.put('/users/:id/unfollow',auth ,async (req, res) => {
+    if(req.user.id != req.params.id){
+        try{
+            const user = await User.findById(req.params.id)
+
+            if(user.followers.includes(req.user.id)){
+                await user.updateOne({$pull: {followers: req.user.id}})
+                await req.user.updateOne({$pull:{following: req.params.id}})
+                res.status(200).json("user has been unfollowed")
+            }
+            else{
+                res.status(403).json("You dont follow this user")
+            }
+        }
+        catch(e){
+            res.status(500).json(e)
+        }
+    }
+    else{
+        res.status(403).json("You cant unfollow yourself")
+    }
+})
+
+router.patch('/users/me', auth, async (req, res) => {
+    const updates = Object.keys(req.body)
+    console.log(updates)
+
+    const allowedUpates = ['name', 'email', 'password', 'website', 'bio', 'location']
+    const isValidOperation = updates.every((update) => allowedUpates.includes(update))
+
+    if(!isValidOperation) {
+        return res.status(400).send({
+            error: "Invalid request"
+        })
+    }
+
+    try{
+        const user = req.user
+        updates.forEach((update) => {user[update] = req.body[update]})
+        await user.save()
+
+        res.send(user)
+    }
+    catch(e){
+        res.status(400).send(e)
+    }
+})
+
  module.exports = router
