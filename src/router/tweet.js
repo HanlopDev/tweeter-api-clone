@@ -61,6 +61,25 @@ router.get('/tweets', async (req, res) => {
     }
 })
 
+//fetch a specific user tweet
+router.get('/tweets/:id', async (req, res) => {
+    const _id = req.params.id
+
+    try{
+        const tweet = await Tweet.find({ user: _id })
+
+        if(!tweet){
+            return res.status(404).send()
+        }
+
+        res.send(tweet)
+    }
+
+    catch(e){
+        res.status(500).send(e)
+    }
+})
+
 //fetch tweet image 
 router.get('/tweets/:id/image', async (req, res) => {
 
@@ -77,6 +96,44 @@ router.get('/tweets/:id/image', async (req, res) => {
         res.status(404).send(e)
     }
 
+})
+
+//like tweet function
+router.put('/tweets/:id/like', auth, async (req, res) => {
+
+    try{
+        const tweet = await Tweet.findById(req.params.id)
+        if(!tweet.likes.includes(req.user.id)){
+            await tweet.updateOne({$push: {likes: req.user.id}})
+            res.status(200).json('post has been liked')
+        }
+        else{
+            res.status(403).json("you already liked this tweet")
+        }
+    }
+
+    catch(e){
+        res.send(500).send(e)
+    }
+})
+
+//unlike tweet
+router.put('/tweets/:id/unlike', auth, async (req, res) => {
+
+    try{
+        const tweet = await Tweet.findById(req.params.id)
+        if(tweet.likes.includes(req.user.id)){
+            await tweet.updateOne({$pull: {likes: req.user.id}})
+            res.status(200).json('post has been unliked')
+        }
+        else{
+            res.status(403).json('You already unlike this tweet')
+        }
+    }
+
+    catch(e){
+        res.status(500).send(e)
+    }
 })
 
 module.exports = router
